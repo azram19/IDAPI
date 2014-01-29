@@ -48,12 +48,12 @@ def JPT(theData, varRow, varCol, noStates):
 #Coursework 1 task 3 should be inserted here 
     # P(c2&d4) == N(c2&d4) / len(theData)
     # N(c2&d4)
-    for i in xrange(noStates[varC]):
-        for j in xrange(noStates[varP]):
+    for i in xrange(noStates[varRow]):
+        for j in xrange(noStates[varCol]):
             for k in xrange(theData.shape[0]):
-                cPT[i, j] += (theData[k, varC] == i and theData[k, varP] == j)
+                jPT[i, j] += (theData[k, varRow] == i and theData[k, varCol] == j)
             # Normalize by the number of data points
-            cPT[i, j] /= theData.shape[0] 
+            jPT[i, j] /= theData.shape[0] 
      
 # end of coursework 1 task 3
     return jPT
@@ -62,7 +62,7 @@ def JPT(theData, varRow, varCol, noStates):
 def JPT2CPT(aJPT):
 #Coursework 1 task 4 should be inserted here 
     # Normalize columns to make them sum to 1
-    for i in xrange(aJPT.shape[0]):  
+    for i in xrange(aJPT.shape[1]):  
         aJPT[:, i] /= sum(aJPT[:, i])
 # coursework 1 taks 4 ends here
     return aJPT
@@ -77,9 +77,9 @@ def Query(theQuery, naiveBayes):
     for i in xrange(naiveBayes[0].shape[0]):
         # Prior for ci 
         rootPdf[i] = naiveBayes[0][i]
-        for j in xrange(1, naiveBayes[0].shape[0]):
+        for j in xrange(1, len(theQuery)+1):
             # CPT - j | ci
-            rootPdf[i] *= naiveBayes[j][i, theQuery[j - 1]]
+            rootPdf[i] *= naiveBayes[j][theQuery[j - 1],i]
 
     # Normalize
     rootPdf /= sum(rootPdf)
@@ -242,14 +242,40 @@ def PrincipalComponents(theData):
 #
 noVariables, noRoots, noStates, noDataPoints, datain = ReadFile("Neurones.txt")
 theData = array(datain)
-AppendString("results.txt","Coursework One Results by dfg")
+AppendString("results.txt","Coursework One Results by Lukasz Koprowski & Agata Mosinska")
 AppendString("results.txt","") #blank line
 AppendString("results.txt","The prior probability of node 0")
-prior = Prior(theData, 0, noStates)
-AppendList("results.txt", prior)
-#
-# continue as described
-#
-#
+prior = Prior(theData, 0,noStates)
+AppendList("results.txt",prior)
+AppendString("results.txt","") #blank line
+AppendString("results.txt","The conditional probability P(2|0)")
+condProb = CPT(theData,2,0,noStates)
+AppendString("results.txt",condProb)
+AppendString("results.txt","") #blank line
+AppendString("results.txt","The joint probability P(2&0)")
+jointProb = JPT(theData,2,0,noStates)
+AppendString("results.txt",jointProb)
+AppendString("results.txt","") #blank line
+AppendString("results.txt","The conditional probability P(2|0) from joint probability")
+jointProb2 = JPT2CPT(jointProb)
+AppendString("results.txt",jointProb2)
+AppendString("results.txt","")
+AppendString("results.txt","Probability of Query 1")
+
+naiveBayes = []
+naiveBayes.append(prior)
+for i in xrange(1,noVariables):
+    naiveBayes.append(CPT(theData,i,0,noStates))
+
+#naiveBayes = [prior,CPT(theData,1,0,noStates),CPT(theData,2,0,noStates),CPT(theData,3,0,noStates),CPT(theData,4,0,noStates),CPT(theData,5,0,noStates) ]
+query1 = Query([4,0,0,0,5],naiveBayes)
+
+
+AppendString("results.txt",query1)
+AppendString("results.txt","")
+AppendString("results.txt","Probability of Query 2")
+
+query2 = Query([6,5,2,5,5],naiveBayes)
+AppendString("results.txt",query2)
 
 

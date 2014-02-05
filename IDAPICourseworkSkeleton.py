@@ -3,6 +3,8 @@
 # Coursework in Python 
 from IDAPICourseworkLibrary import *
 from numpy import *
+import math
+import operator
 #
 # Coursework 1 begins here
 #
@@ -96,6 +98,10 @@ def MutualInformation(jP):
     mi=0.0
 # Coursework 2 task 1 should be inserted here
    
+    for i in xrange(jP.shape[0]):
+        for j in xrange(jP.shape[1]):
+            if(jP[i,j]!=0):
+                mi += jP[i,j] * math.log((jP[i,j] /(sum(jP[i,:])*sum(jP[:,j]))))/math.log(2)
 
 # end of coursework 2 task 1
     return mi
@@ -104,7 +110,13 @@ def MutualInformation(jP):
 def DependencyMatrix(theData, noVariables, noStates):
     MIMatrix = zeros((noVariables,noVariables))
 # Coursework 2 task 2 should be inserted here
-    
+    for i in xrange(noVariables):
+        for j in xrange(noVariables):
+            jPT = JPT(theData,i,j,noStates)
+            mutInfo = MutualInformation(jPT)
+            MIMatrix[i,j] = MIMatrix[j,i] = mutInfo
+            if (i==j):
+                MIMatrix[i,j] = MIMatrix[j,i] = 0
 
 # end of coursework 2 task 2
     return MIMatrix
@@ -112,10 +124,24 @@ def DependencyMatrix(theData, noVariables, noStates):
 def DependencyList(depMatrix):
     depList=[]
 # Coursework 2 task 3 should be inserted here
+    copMatrix = depMatrix
     
-
+    while (copMatrix.sum()!=0):
+        #var1, var2 = max(enumerate(copMatrix), key=operator.itemgetter(1))
+        maxNum = 0
+        for i in xrange(copMatrix.shape[0]):
+            for j in xrange(copMatrix.shape[1]):
+                if(copMatrix[i,j]>maxNum):
+                    maxNum = copMatrix[i,j]
+                    node1 = i
+                    node2 = j
+        
+        entry = [maxNum,node1,node2]
+        depList = depList+[entry]
+        copMatrix[node1,node2] = copMatrix[node2, node1] = 0
+        
 # end of coursework 2 task 3
-    return array(depList2)
+    return array(depList)
 #
 # Functions implementing the spanning tree algorithm
 # Coursework 2 task 4
@@ -240,42 +266,16 @@ def PrincipalComponents(theData):
 #
 # main program part for Coursework 1
 #
-noVariables, noRoots, noStates, noDataPoints, datain = ReadFile("Neurones.txt")
+noVariables, noRoots, noStates, noDataPoints, datain = ReadFile("HepatitisC.txt")
 theData = array(datain)
-AppendString("results.txt","Coursework One Results by Lukasz Koprowski & Agata Mosinska")
-AppendString("results.txt","") #blank line
-AppendString("results.txt","The prior probability of node 0")
-prior = Prior(theData, 0,noStates)
-AppendList("results.txt",prior)
-AppendString("results.txt","") #blank line
-AppendString("results.txt","The conditional probability P(2|0)")
-condProb = CPT(theData,2,0,noStates)
-AppendString("results.txt",condProb)
-AppendString("results.txt","") #blank line
-AppendString("results.txt","The joint probability P(2&0)")
-jointProb = JPT(theData,2,0,noStates)
-AppendString("results.txt",jointProb)
-AppendString("results.txt","") #blank line
-AppendString("results.txt","The conditional probability P(2|0) from joint probability")
-jointProb2 = JPT2CPT(jointProb)
-AppendString("results.txt",jointProb2)
-AppendString("results.txt","")
-AppendString("results.txt","Probability of Query 1")
-
-naiveBayes = []
-naiveBayes.append(prior)
-for i in xrange(1,noVariables):
-    naiveBayes.append(CPT(theData,i,0,noStates))
-
-#naiveBayes = [prior,CPT(theData,1,0,noStates),CPT(theData,2,0,noStates),CPT(theData,3,0,noStates),CPT(theData,4,0,noStates),CPT(theData,5,0,noStates) ]
-query1 = Query([4,0,0,0,5],naiveBayes)
-
-
-AppendString("results.txt",query1)
-AppendString("results.txt","")
-AppendString("results.txt","Probability of Query 2")
-
-query2 = Query([6,5,2,5,5],naiveBayes)
-AppendString("results.txt",query2)
-
+AppendString("results2.txt","Coursework One Results by Lukasz Koprowski (lk1510)& Agata Mosinska (am9310)")
+AppendString("results2.txt","") #blank line
+AppendString("results2.txt", "Dependency Matrix")
+depMatrix = DependencyMatrix(theData,noVariables,noStates)
+AppendString("results2.txt","")
+AppendString("results2.txt",depMatrix)
+AppendString("results2.txt","")
+AppendString("results2.txt","Dependency List")
+depList = DependencyList(depMatrix)
+AppendString("results2.txt",depList)
 

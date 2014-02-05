@@ -314,10 +314,12 @@ AppendString("results2.txt","") #blank line
 AppendString("results2.txt", "Dependency Matrix")
 depMatrix = DependencyMatrix(theData,noVariables,noStates)
 AppendString("results2.txt","")
-AppendString("results2.txt",depMatrix)
+AppendArray("results2.txt",depMatrix)
 AppendString("results2.txt","")
 AppendString("results2.txt","Dependency List")
 depList = DependencyList(depMatrix)
-AppendString("results2.txt",depList)
+AppendArray("results2.txt",depList)
 spanningTree = SpanningTreeAlgorithm(depList, noVariables)
-AppendString("results2.txt", spanningTree)
+AppendString("results2.txt","") #blank line
+AppendString("results2.txt","Maximally Weighted Spanning Tree") #blank line
+AppendArray("results2.txt", spanningTree)

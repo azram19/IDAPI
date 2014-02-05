@@ -146,9 +146,50 @@ def DependencyList(depMatrix):
 # Functions implementing the spanning tree algorithm
 # Coursework 2 task 4
 
+def Root(unions, b):
+    """Return the root set of an item
+    Re-parents nodes while traversing them to minimize depth of a tree"""
+
+    root = unions[b]
+    oldRoot = root
+
+    while root != unions[root]:
+        root = unions[root]
+        unions[oldRoot] = root
+        oldRoot = root
+
+    unions[b] = root
+    return root
+
+def Unify(unions, a, b):
+    """Merge two items into the same set"""
+    root = Root(unions, b)
+
+    unions[a] = root
+    unions[b] = root
+
 def SpanningTreeAlgorithm(depList, noVariables):
+    # unions[i] - root of a set tree to which the node belongs
+    unions = zeros(noVariables, dtype=float32)
+
     spanningTree = []
-  
+    # [::-1] python idiom for reversing a list
+    sortedDepList = sort(depList, axis=0)[::-1]
+    # Set each variable to be in its own set
+    for i in xrange(noVariables):
+        unions[i] = i
+
+    # Iterate over the list of `dependencies`
+    for i in xrange(sortedDepList.shape[0]):
+        dep = sortedDepList[i, :]
+        rootA = Root(unions, dep[1])
+        rootB = Root(unions, dep[2])
+
+        # To avoid loops check if variables do not belong to the same set
+        if(rootA != rootB):
+            Unify(unions, dep[1], dep[2])
+            spanningTree.append(dep[1:])
+
     return array(spanningTree)
 #
 # End of coursework 2
@@ -278,4 +319,5 @@ AppendString("results2.txt","")
 AppendString("results2.txt","Dependency List")
 depList = DependencyList(depMatrix)
 AppendString("results2.txt",depList)
-
+spanningTree = SpanningTreeAlgorithm(depList, noVariables)
+AppendString("results2.txt", spanningTree)

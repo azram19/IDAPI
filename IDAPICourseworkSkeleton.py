@@ -151,30 +151,29 @@ def Root(unions, b):
     Re-parents nodes while traversing them to minimize depth of a tree"""
 
     root = unions[b]
-    oldRoot = root
 
     while root != unions[root]:
+        oldRoot = root
         root = unions[root]
         unions[oldRoot] = root
-        oldRoot = root
 
     unions[b] = root
     return root
 
 def Unify(unions, a, b):
     """Merge two items into the same set"""
-    root = Root(unions, b)
+    rootA = Root(unions, a)
+    rootB = Root(unions, b)
 
-    unions[a] = root
-    unions[b] = root
+    unions[rootA] = rootB
 
 def SpanningTreeAlgorithm(depList, noVariables):
     # unions[i] - root of a set tree to which the node belongs
     unions = zeros(noVariables, dtype=float32)
 
     spanningTree = []
-    # [::-1] python idiom for reversing a list
-    sortedDepList = sort(depList, axis=0)[::-1]
+    # Assume it is sorted
+    sortedDepList = depList
     # Set each variable to be in its own set
     for i in xrange(noVariables):
         unions[i] = i
@@ -188,7 +187,7 @@ def SpanningTreeAlgorithm(depList, noVariables):
         # To avoid loops check if variables do not belong to the same set
         if(rootA != rootB):
             Unify(unions, dep[1], dep[2])
-            spanningTree.append(dep[1:])
+            spanningTree.append(dep)
 
     return array(spanningTree)
 #

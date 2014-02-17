@@ -200,8 +200,35 @@ def SpanningTreeAlgorithm(depList, noVariables):
 def CPT_2(theData, child, parent1, parent2, noStates):
     cPT = zeros([noStates[child],noStates[parent1],noStates[parent2]], float )
 # Coursework 3 task 1 should be inserted here
-   
+    # Number of states for {}
+    nsc = noStates[child]
+    nsp1 = noStates[parent1]
+    nsp2 = noStates[parent2]
+    nP = zeros([noStates[parent1], noStates[parent2]], float)
+    #N(c&p1&p2)
+    for i in xrange(nsc):
+        for j in xrange{nsp1}:
+            for k in xrange(nsp2):
+                for l in xrange(theData.shape[0]):
+                    cPT[i, j, k] += (theData[l, child] == i and
+                                theData[l, parent1] == j and
+                                theData[l, parent2] == k)
 
+    #N(p1&p2)
+    for j in xrange{nsp1}:
+        for k in xrange(nsp2):
+            for l in xrange(theData.shape[0]):
+                nP[j, k] += (
+                            theData[l, parent1] == j and
+                            theData[l, parent2] == k)
+
+    
+
+    #P(c|p1&p2) = N(c1&p1&p2) / N(p1&p2)
+    for i in xrange(nsc):
+        for j in xrange{nsp1}:
+            for k in xrange(nsp2):
+                cPT[i, j, k] /= nP[j, k]
 # End of Coursework 3 task 1           
     return cPT
 #
@@ -224,8 +251,27 @@ def ExampleBayesianNetwork(theData, noStates):
 def MDLSize(arcList, cptList, noDataPoints, noStates):
     mdlSize = 0.0
 # Coursework 3 task 3 begins here
+    # arcList connectivity - [0] is node [1:] are parents
+    # cptList, conditional probability table for each nodes
+    # N is the number of cases used to compute the probabilites
+    N = noDataPoints
 
+    # Compute number of parameters required to get probabilities for a node
+    for i in xrange(len(arcList)):
+        n = arcList[i][0]
 
+        # Conditional probabilities
+        # Number of entries 
+        sh = cptList[n].shape
+        # We do not need info from last row
+        sh[0] -= 1
+
+        Bn += prod(sh)
+
+    mdlSize = abs(Bn)
+    mdlSize *= log2(N)
+    mdlSize /= 2
+    
 # Coursework 3 task 3 ends here 
     return mdlSize 
 #
@@ -233,7 +279,14 @@ def MDLSize(arcList, cptList, noDataPoints, noStates):
 def JointProbability(dataPoint, arcList, cptList):
     jP = 1.0
 # Coursework 3 task 4 begins here
+    
+    def getVProbability(i, s):
+        p = 1
+        p *= sum(cptList[i][s])
+        return p
 
+    for i, s in enumerate(dataPoint):
+        jP *= getVProbability(i, s)
 
 # Coursework 3 task 4 ends here 
     return jP
@@ -242,8 +295,9 @@ def JointProbability(dataPoint, arcList, cptList):
 def MDLAccuracy(theData, arcList, cptList):
     mdlAccuracy=0
 # Coursework 3 task 5 begins here
-
-
+    
+    
+    mdlAccuracy = log2(mdlAccuracy)
 # Coursework 3 task 5 ends here 
     return mdlAccuracy
 #

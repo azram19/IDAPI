@@ -273,16 +273,10 @@ def MDLSize(arcList, cptList, noDataPoints, noStates):
     for i in xrange(len(arcList)):
         n = arcList[i][0]
         sh = cptList[n].shape
-        #sh[0] -= 1
-        shp = list(sh)
-        shp[0]-=1 
-        Bn += prod(shp)
 
-    #    cpt = cptList[i]
-    #    for j in xrange(len(arcList[i])):
-        # Conditional probabilities
-        # Number of entries 
-    #        Bn += ((noStates[i]-1)*cptList.shape[j]
+        shp = list(sh)
+        shp[0] -= 1
+        Bn += prod(shp)
 
     mdlSize = abs(Bn)
     mdlSize *= log2(N)
@@ -295,17 +289,26 @@ def MDLSize(arcList, cptList, noDataPoints, noStates):
 def JointProbability(dataPoint, arcList, cptList):
     jP = 1.0
 # Coursework 3 task 4 begins here
-    for i in xrange(len(dataPoint)):
-        cpt = cptList[i]
-        
-        prob = cpt[dataPoint[i]]
-        for j in xrange(1,len(arcList[i])):
-            #child nodes
-                parent = arcList[i][j]
-                prob = prob[dataPoint[parent]]
-                
-        jP *=prob
-    
+    # Get conditional probability for a node
+    def getProbability(node):
+        # Get correct probability table
+        cpt = cptList[node]
+
+        # Create index to the right entry in the table
+        cptIndices = []
+        for n in arcList[node]:
+            cptIndices.append(dataPoint[n])
+
+        # Return probablity
+        prob = cpt[tuple(cptIndices)]
+        return prob
+
+    nodesToTraverse = range(len(arcList))
+    while nodesToTraverse:
+        # Get the first node in the queue 
+        node = nodesToTraverse.pop(0)
+        # Get probability
+        jP *= getProbability(node)
 
 # Coursework 3 task 4 ends here 
     return jP
@@ -315,41 +318,60 @@ def MDLAccuracy(theData, arcList, cptList):
     mdlAccuracy=0
 # Coursework 3 task 5 begins here
     for i in xrange(theData.shape[0]):
-        jP = JointProbability(theData[i],arcList,cptList)
-        if(jP!=0):
-            mdlAccuracy +=log2(jP)
+        jP = JointProbability(theData[i], arcList, cptList)
+        if(jP != 0):
+            mdlAccuracy += log2(jP)
+
 # Coursework 3 task 5 ends here 
     return mdlAccuracy
     
 #Coursework 3 task 6 begins here    
-def BestScoringNet(theData,arcList,cptList,noDataPoints, noStates):
+def BestScoringNet(theData, arcList, cptList, noDataPoints, noStates):
+    import copy
+    
+    def buildNetwork(arcList):
+        cptList = []
+        for nodes in arcList:
+            node = nodes[0]
+            if(len(nodes) == 1):
+                cpt = Prior(theData, node, noStates)
+            elif(len(nodes) == 2):
+                cpt = CPT(theData, node, nodes[1], noStates)
+            else:
+                cpt = CPT_2(theData, node, nodes[1], nodes[2], noStates)
+
+            cptList.append(cpt)
+        return arcList, cptList
+
+    nnodes = len(arcList)
+    init = True
     bestMDLScore = 0
     bestArcList = []
     bestCptList = []
-    
-    for i in xrange(len(arcList)):
-        newArcList = arcList
-        newCptList = cptList
-        for j in xrange(1,len(arcList[i])):
-            del newArcList[i][j]
-            
-            if (len(newArcList[i])==1):
-                newCptList[i] = Prior(theData,i, noStates)
-            else:
-                newCptList[i] = CPT(theData, i, newArcList[i][1], noStates)
-            
-            mdlScore = MDLAccuracy(theData,newArcList,cptList) + MDLSize(newArcList, newCptList, noDataPoints, noStates)
-            if (mdlScore > bestMDLScore):
+    # Iterate over all possible arcs
+    for arc in map(tuple, ([n1, n2] for n1 in range(nnodes) for n2 in range(nnodes) if n1 != n2)):
+        # Check if this arc exists
+        if arc[1] in arcList[arc[0]]:
+            # Make a copy of the list
+            newArcList = copy.deepcopy(arcList)
+            # Remove the arc
+            newArcList[arc[0]].remove(arc[1])
+
+            # Build network
+            _, newCptList = buildNetwork(newArcList)
+
+            # Compute mdlScore for the new network
+            mdlScore = MDLAccuracy(theData, newArcList, newCptList) + MDLSize(newArcList, newCptList, noDataPoints, noStates)
+
+            # Save the best results
+            if mdlScore > bestMDLScore or init:
+                init = False
                 bestMDLScore = mdlScore
                 bestArcList = newArcList
                 bestCptList = newCptList
-            
-            newArcList=arcList    
-            
-    
+
     return bestArcList, bestCptList
-    
-    
+
 #
 # End of coursework 3
 #
@@ -421,4 +443,8 @@ AppendString("results3.txt", "MDL Accuracy")
 accuracy = MDLAccuracy(theData, arcList, cptList)
 AppendString("results3.txt",accuracy)
 AppendString("results3.txt","Best Scoring Network")
-#(newArcs,newCpts) = BestScoringNet(theData,arcList,cptList,noDataPoints, noStates)
+(newArcs,newCpts) = BestScoringNet(theData,arcList,cptList,noDataPoints, noStates)
+bestScoreRemoved = MDLAccuracy(theData, newArcs, newCpts) + MDLSize(newArcs, newCpts, noDataPoints, noStates)
+AppendString("results3.txt",arcList)
+AppendString("results3.txt",newArcs)
+AppendString("results3.txt",bestScoreRemoved)

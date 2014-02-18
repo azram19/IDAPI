@@ -207,7 +207,7 @@ def CPT_2(theData, child, parent1, parent2, noStates):
     nP = zeros([noStates[parent1], noStates[parent2]], float)
     #N(c&p1&p2)
     for i in xrange(nsc):
-        for j in xrange{nsp1}:
+        for j in xrange(nsp1):
             for k in xrange(nsp2):
                 for l in xrange(theData.shape[0]):
                     cPT[i, j, k] += (theData[l, child] == i and
@@ -215,7 +215,7 @@ def CPT_2(theData, child, parent1, parent2, noStates):
                                 theData[l, parent2] == k)
 
     #N(p1&p2)
-    for j in xrange{nsp1}:
+    for j in xrange(nsp1):
         for k in xrange(nsp2):
             for l in xrange(theData.shape[0]):
                 nP[j, k] += (
@@ -226,7 +226,7 @@ def CPT_2(theData, child, parent1, parent2, noStates):
 
     #P(c|p1&p2) = N(c1&p1&p2) / N(p1&p2)
     for i in xrange(nsc):
-        for j in xrange{nsp1}:
+        for j in xrange(nsp1):
             for k in xrange(nsp2):
                 cPT[i, j, k] /= nP[j, k]
 # End of Coursework 3 task 1           
@@ -244,12 +244,25 @@ def ExampleBayesianNetwork(theData, noStates):
     cptList = [cpt0, cpt1, cpt2, cpt3, cpt4, cpt5]
     return arcList, cptList
 # Coursework 3 task 2 begins here
-
+def HepatitisCBayesianNetwork(theData, noStates):
+    arcList = [[0],[1],[2,0],[3,4],[4,1],[5,4],[6,1],[7,0,1],[8,7]]
+    cpt0 = Prior(theData, 0, noStates)
+    cpt1 = Prior(theData, 1, noStates)
+    cpt2 = CPT(theData, 2, 0, noStates)
+    cpt3 = CPT(theData, 3, 4, noStates)
+    cpt4 = CPT(theData, 4, 1, noStates)
+    cpt5 = CPT(theData, 5, 4, noStates)
+    cpt6 = CPT(theData, 6, 1, noStates)
+    cpt7 = CPT_2(theData, 7, 0, 1, noStates)
+    cpt8 = CPT(theData, 8, 7, noStates)
+    cptList = [cpt0, cpt1, cpt2, cpt3, cpt4, cpt5, cpt6, cpt7, cpt8]
+    return arcList, cptList
 # end of coursework 3 task 2
 #
 # Function to calculate the MDL size of a Bayesian Network
 def MDLSize(arcList, cptList, noDataPoints, noStates):
     mdlSize = 0.0
+    Bn = 0.0
 # Coursework 3 task 3 begins here
     # arcList connectivity - [0] is node [1:] are parents
     # cptList, conditional probability table for each nodes
@@ -259,14 +272,17 @@ def MDLSize(arcList, cptList, noDataPoints, noStates):
     # Compute number of parameters required to get probabilities for a node
     for i in xrange(len(arcList)):
         n = arcList[i][0]
+        sh = cptList[n].shape
+        #sh[0] -= 1
+        shp = list(sh)
+        shp[0]-=1 
+        Bn += prod(shp)
 
+    #    cpt = cptList[i]
+    #    for j in xrange(len(arcList[i])):
         # Conditional probabilities
         # Number of entries 
-        sh = cptList[n].shape
-        # We do not need info from last row
-        sh[0] -= 1
-
-        Bn += prod(sh)
+    #        Bn += ((noStates[i]-1)*cptList.shape[j]
 
     mdlSize = abs(Bn)
     mdlSize *= log2(N)
@@ -279,14 +295,17 @@ def MDLSize(arcList, cptList, noDataPoints, noStates):
 def JointProbability(dataPoint, arcList, cptList):
     jP = 1.0
 # Coursework 3 task 4 begins here
+    for i in xrange(len(dataPoint)):
+        cpt = cptList[i]
+        
+        prob = cpt[dataPoint[i]]
+        for j in xrange(1,len(arcList[i])):
+            #child nodes
+                parent = arcList[i][j]
+                prob = prob[dataPoint[parent]]
+                
+        jP *=prob
     
-    def getVProbability(i, s):
-        p = 1
-        p *= sum(cptList[i][s])
-        return p
-
-    for i, s in enumerate(dataPoint):
-        jP *= getVProbability(i, s)
 
 # Coursework 3 task 4 ends here 
     return jP
@@ -295,15 +314,46 @@ def JointProbability(dataPoint, arcList, cptList):
 def MDLAccuracy(theData, arcList, cptList):
     mdlAccuracy=0
 # Coursework 3 task 5 begins here
-    
-    
-    mdlAccuracy = log2(mdlAccuracy)
+    for i in xrange(theData.shape[0]):
+        jP = JointProbability(theData[i],arcList,cptList)
+        if(jP!=0):
+            mdlAccuracy +=log2(jP)
 # Coursework 3 task 5 ends here 
     return mdlAccuracy
+    
+#Coursework 3 task 6 begins here    
+def BestScoringNet(theData,arcList,cptList,noDataPoints, noStates):
+    bestMDLScore = 0
+    bestArcList = []
+    bestCptList = []
+    
+    for i in xrange(len(arcList)):
+        newArcList = arcList
+        newCptList = cptList
+        for j in xrange(1,len(arcList[i])):
+            del newArcList[i][j]
+            
+            if (len(newArcList[i])==1):
+                newCptList[i] = Prior(theData,i, noStates)
+            else:
+                newCptList[i] = CPT(theData, i, newArcList[i][1], noStates)
+            
+            mdlScore = MDLAccuracy(theData,newArcList,cptList) + MDLSize(newArcList, newCptList, noDataPoints, noStates)
+            if (mdlScore > bestMDLScore):
+                bestMDLScore = mdlScore
+                bestArcList = newArcList
+                bestCptList = newCptList
+            
+            newArcList=arcList    
+            
+    
+    return bestArcList, bestCptList
+    
+    
 #
-# End of coursework 2
+# End of coursework 3
 #
-# Coursework 3 begins here
+# Coursework 4 begins here
 #
 def Mean(theData):
     realData = theData.astype(float)
@@ -358,21 +408,17 @@ def PrincipalComponents(theData):
     return array(orthoPhi)
 
 #
-# main program part for Coursework 1
+# main program part for Coursework 3
 #
 noVariables, noRoots, noStates, noDataPoints, datain = ReadFile("HepatitisC.txt")
 theData = array(datain)
-AppendString("results2.txt","Coursework One Results by Lukasz Koprowski (lk1510)& Agata Mosinska (am9310)")
-AppendString("results2.txt","") #blank line
-AppendString("results2.txt", "Dependency Matrix")
-depMatrix = DependencyMatrix(theData,noVariables,noStates)
-AppendString("results2.txt","")
-AppendArray("results2.txt",depMatrix)
-AppendString("results2.txt","")
-AppendString("results2.txt","Dependency List")
-depList = DependencyList(depMatrix)
-AppendArray("results2.txt",depList)
-spanningTree = SpanningTreeAlgorithm(depList, noVariables)
-AppendString("results2.txt","") #blank line
-AppendString("results2.txt","Maximally Weighted Spanning Tree") #blank line
-AppendArray("results2.txt", spanningTree)
+AppendString("results3.txt","Coursework One Results by Lukasz Koprowski (lk1510)& Agata Mosinska (am9310)")
+AppendString("results3.txt","Size of network")
+(arcList, cptList) = HepatitisCBayesianNetwork(theData, noStates)
+size = MDLSize(arcList, cptList, noDataPoints, noStates)
+AppendString("results3.txt", size)
+AppendString("results3.txt", "MDL Accuracy")
+accuracy = MDLAccuracy(theData, arcList, cptList)
+AppendString("results3.txt",accuracy)
+AppendString("results3.txt","Best Scoring Network")
+#(newArcs,newCpts) = BestScoringNet(theData,arcList,cptList,noDataPoints, noStates)

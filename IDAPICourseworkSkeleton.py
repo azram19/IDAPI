@@ -17,9 +17,11 @@ def Prior(theData, root, noStates):
         dp = theData[i, :] # Select a datapoint
         s = dp[root]    # State of the variable
         prior[s] += 1   # Increment
-
+    
+    prior_sum = sum(prior)
     # Normalize
-    prior /= sum(prior)
+    if prior_sum != 0:
+        prior /= prior_sum
 # end of Coursework 1 task 1
     return prior
 # Function to compute a CPT with parent node varP and xchild node varC from the data array
@@ -41,7 +43,8 @@ def CPT(theData, varC, varP, noStates):
     # P(d4|c2) = N(c2&d4) / N(c2)
     for i in xrange(noStates[varC]):
         for j in xrange(noStates[varP]):
-            cPT[i, j] /= nP[j] 
+            if nP[j] != 0:
+                cPT[i, j] /= nP[j] 
 # end of coursework 1 task 2
     return cPT
 # Function to calculate the joint probability table of two variables in the data set
@@ -65,7 +68,9 @@ def JPT2CPT(aJPT):
 #Coursework 1 task 4 should be inserted here 
     # Normalize columns to make them sum to 1
     for i in xrange(aJPT.shape[1]):  
-        aJPT[:, i] /= sum(aJPT[:, i])
+        norm_sum = sum(aJPT[:, i])
+        if norm_sum != 0:
+            aJPT[:, i] /= norm_sum
 # coursework 1 taks 4 ends here
     return aJPT
 
@@ -84,8 +89,10 @@ def Query(theQuery, naiveBayes):
             rootPdf[i] *= naiveBayes[j][theQuery[j - 1],i]
 
     # Normalize
-    rootPdf /= sum(rootPdf)
-
+    norm_sum = sum(rootPdf)
+    
+    if norm_sum != 0:
+        rootPdf /= norm_sum
 # end of coursework 1 task 5
     return rootPdf
 #
@@ -228,7 +235,8 @@ def CPT_2(theData, child, parent1, parent2, noStates):
     for i in xrange(nsc):
         for j in xrange(nsp1):
             for k in xrange(nsp2):
-                cPT[i, j, k] /= nP[j, k]
+                if nP[j, k] != 0:
+                    cPT[i, j, k] /= nP[j, k]
 # End of Coursework 3 task 1           
     return cPT
 #
@@ -361,10 +369,10 @@ def BestScoringNet(theData, arcList, cptList, noDataPoints, noStates):
             _, newCptList = buildNetwork(newArcList)
 
             # Compute mdlScore for the new network
-            mdlScore = MDLAccuracy(theData, newArcList, newCptList) + MDLSize(newArcList, newCptList, noDataPoints, noStates)
+            mdlScore = MDLSize(newArcList, newCptList, noDataPoints, noStates) - MDLAccuracy(theData, newArcList, newCptList) 
 
-            # Save the best results
-            if mdlScore > bestMDLScore or init:
+            # Save the best results (if there is a previous result)
+            if mdlScore < bestMDLScore or init:
                 init = False
                 bestMDLScore = mdlScore
                 bestArcList = newArcList
@@ -434,17 +442,18 @@ def PrincipalComponents(theData):
 #
 noVariables, noRoots, noStates, noDataPoints, datain = ReadFile("HepatitisC.txt")
 theData = array(datain)
-AppendString("results3.txt","Coursework One Results by Lukasz Koprowski (lk1510)& Agata Mosinska (am9310)")
-AppendString("results3.txt","Size of network")
+AppendString("results3.txt","Coursework Three Results by Lukasz Koprowski (lk1510) & Agata Mosinska (am9310)")
+AppendString("results3.txt","\nMDLSize of network")
 (arcList, cptList) = HepatitisCBayesianNetwork(theData, noStates)
 size = MDLSize(arcList, cptList, noDataPoints, noStates)
 AppendString("results3.txt", size)
-AppendString("results3.txt", "MDL Accuracy")
+AppendString("results3.txt", "\nMDLAccuracy")
 accuracy = MDLAccuracy(theData, arcList, cptList)
-AppendString("results3.txt",accuracy)
-AppendString("results3.txt","Best Scoring Network")
+AppendString("results3.txt", accuracy)
+AppendString("results3.txt", "\nMDLScore")
+AppendString("results3.txt", - accuracy + size)
+AppendString("results3.txt", "\nBest Scoring Network")
 (newArcs,newCpts) = BestScoringNet(theData,arcList,cptList,noDataPoints, noStates)
-bestScoreRemoved = MDLAccuracy(theData, newArcs, newCpts) + MDLSize(newArcs, newCpts, noDataPoints, noStates)
-AppendString("results3.txt",arcList)
-AppendString("results3.txt",newArcs)
-AppendString("results3.txt",bestScoreRemoved)
+bestScoreRemoved = - MDLAccuracy(theData, newArcs, newCpts) + MDLSize(newArcs, newCpts, noDataPoints, noStates)
+AppendString("results3.txt", "Score of the best network")
+AppendString("results3.txt", bestScoreRemoved)

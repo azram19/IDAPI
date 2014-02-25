@@ -390,7 +390,9 @@ def Mean(theData):
     noVariables=theData.shape[1] 
     mean = []
     # Coursework 4 task 1 begins here
-
+    for i in xrange(noVariables):
+        
+        mean.append(sum(realData[:,i])/realData.shape[0])
 
 
     # Coursework 4 task 1 ends here
@@ -402,27 +404,57 @@ def Covariance(theData):
     noVariables=theData.shape[1] 
     covar = zeros((noVariables, noVariables), float)
     # Coursework 4 task 2 begins here
-
+    #calculate mean
+    mean  = Mean(theData)
+    
+    #iterate to find variance and covariance of variables
+    for i in xrange(noVariables):
+        for j in xrange(noVariables):
+            covar[i,j] = sum((realData[:,i]-mean[i])*(realData[:,j]-mean[j]))/theData.shape[0]
 
     # Coursework 4 task 2 ends here
     return covar
 def CreateEigenfaceFiles(theBasis):
-    adummystatement = 0 #delete this when you do the coursework
+    
     # Coursework 4 task 3 begins here
-
+    
+    #read mean face image
+    meanIm = ReadOneImage("MeanImage.jpg")
+    
+    #eigenface = eigenvector*mean image
+    # repeat for all eigenvectors
+    for i in xrange(theBasis.shape[0]):
+        basisImage = theBasis[i] * meanIm
+        filename = "PrincipalComponent" + str(i+1) + ".jpg"
+        SaveEigenface(basisImage,filename)
     # Coursework 4 task 3 ends here
 
 def ProjectFace(theBasis, theMean, theFaceImage):
     magnitudes = []
     # Coursework 4 task 4 begins here
-
+    # p = (x-miu)*basis_vectors
+    #project by taking dot product
+    for i in xrange(theBasis.shape[0]):
+        magnitudes.append(dot((array(theFaceImage) - array(theMean)),theBasis[i]))
     # Coursework 4 task 4 ends here
     return array(magnitudes)
 
 def CreatePartialReconstructions(aBasis, aMean, componentMags):
-    adummystatement = 0  #delete this when you do the coursework
+    
     # Coursework 4 task 5 begins here
-
+    #just mean image
+    filename = "MeanComponent.jpg"
+    SaveEigenface(aMean,filename)
+    for i in xrange(aBasis.shape[0]):
+    #start with mean image
+        reconstr = aMean
+        #and add projections of consecutive basis images
+        for j in xrange(0,i+1):
+            reconstr = reconstr + componentMags[j]*aBasis[j]
+       
+        #save image
+        filename = "Reconstruction" + str(i+1) + ".jpg"
+        SaveEigenface(reconstr,filename)
     # Coursework 4 task 5 ends here
 
 def PrincipalComponents(theData):
@@ -438,22 +470,22 @@ def PrincipalComponents(theData):
     return array(orthoPhi)
 
 #
-# main program part for Coursework 3
+# main program part for Coursework 4
 #
 noVariables, noRoots, noStates, noDataPoints, datain = ReadFile("HepatitisC.txt")
 theData = array(datain)
-AppendString("results3.txt","Coursework Three Results by Lukasz Koprowski (lk1510) & Agata Mosinska (am9310)")
-AppendString("results3.txt","\nMDLSize of network")
-(arcList, cptList) = HepatitisCBayesianNetwork(theData, noStates)
-size = MDLSize(arcList, cptList, noDataPoints, noStates)
-AppendString("results3.txt", size)
-AppendString("results3.txt", "\nMDLAccuracy")
-accuracy = MDLAccuracy(theData, arcList, cptList)
-AppendString("results3.txt", accuracy)
-AppendString("results3.txt", "\nMDLScore")
-AppendString("results3.txt", - accuracy + size)
-AppendString("results3.txt", "\nBest Scoring Network")
-(newArcs,newCpts) = BestScoringNet(theData,arcList,cptList,noDataPoints, noStates)
-bestScoreRemoved = - MDLAccuracy(theData, newArcs, newCpts) + MDLSize(newArcs, newCpts, noDataPoints, noStates)
-AppendString("results3.txt", "Score of the best network")
-AppendString("results3.txt", bestScoreRemoved)
+AppendString("results4.txt","Coursework One Results by Lukasz Koprowski (lk1510)& Agata Mosinska (am9310)")
+AppendString("results4.txt","Mean Vector")
+meanV = Mean(theData)
+AppendString("results4.txt",meanV)
+AppendString("results4.txt","Covariance Matrix")
+covM = Covariance(theData)
+AppendString("results4.txt",covM)
+AppendString("results4.txt","Component Magnitudes")
+theFaceImage = ReadOneImage("c.pgm")
+meanFace = ReadOneImage("MeanImage.jpg")
+theBasis = ReadEigenfaceBasis()
+CreateEigenfaceFiles(theBasis)
+compMag = ProjectFace(theBasis, meanFace, theFaceImage)
+AppendString("results4.txt",compMag)
+CreatePartialReconstructions(theBasis, array(meanFace), compMag)
